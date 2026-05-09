@@ -10,6 +10,7 @@ jobs:
   pester:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         container:
           - ghcr.io/peppekerstens/pwsh-pester-ubuntu:24.04

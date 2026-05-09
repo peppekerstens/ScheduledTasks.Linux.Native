@@ -85,11 +85,11 @@ Tested across 5 Linux distributions in containers on every push. Integration tes
 
 | Distro | Image |
 |---|---|
-| Ubuntu 22.04 | `peppekerstens/testinfra:ubuntu2204` |
-| Ubuntu 24.04 | `peppekerstens/testinfra:ubuntu2404` |
-| Debian 12 | `peppekerstens/testinfra:debian12` |
-| Fedora 41 | `peppekerstens/testinfra:fedora41` |
-| openSUSE Tumbleweed | `peppekerstens/testinfra:opensuse-tumbleweed` |
+| Ubuntu 24.04 | `ghcr.io/peppekerstens/pwsh-pester-ubuntu:24.04` |
+| Debian 12 | `ghcr.io/peppekerstens/pwsh-pester-debian:12` |
+| Fedora 40 | `ghcr.io/peppekerstens/pwsh-pester-fedora:40` |
+| openSUSE Tumbleweed | `ghcr.io/peppekerstens/pwsh-pester-opensuse:tumbleweed` |
+| Arch Linux | `ghcr.io/peppekerstens/pwsh-pester-arch:latest` |
 
 ### Test scenarios
 

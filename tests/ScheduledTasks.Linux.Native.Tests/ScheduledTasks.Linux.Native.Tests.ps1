@@ -4,7 +4,9 @@
 # Test timers are prefixed 'stn_test_' to avoid clashing with real units.
 
 BeforeDiscovery {
-    $script:isRoot     = $IsLinux -and ((& id -u) -eq '0')
+    $script:isRoot     = $IsLinux -and (
+                             [System.IO.File]::ReadAllText('/proc/self/status') -match '(?m)^Uid:\s+(\d+)' -and
+                             $Matches[1] -eq '0')
     $script:isLinux    = $IsLinux
     $script:prefix     = 'stn_test'
     $script:taskName   = "$($script:prefix)_daily"

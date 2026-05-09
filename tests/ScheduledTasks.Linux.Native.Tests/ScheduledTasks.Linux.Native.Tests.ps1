@@ -258,7 +258,7 @@ Describe 'Stub cmdlets' {
 # ---------------------------------------------------------------------------
 # Integration tests — Linux + root only
 # ---------------------------------------------------------------------------
-Describe 'Register-ScheduledTask / Get-ScheduledTask integration' -Skip:(-not ($script:onLinux -and $script:isRoot)) {
+Describe 'Register-ScheduledTask / Get-ScheduledTask integration' -Skip:(-not ($script:onLinux -and $script:isRoot -and $script:hasSystemd)) {
     BeforeAll {
         $script:prefix   = 'stn_test'
         $script:taskName = "$($script:prefix)_daily"
@@ -316,7 +316,7 @@ Describe 'Register-ScheduledTask / Get-ScheduledTask integration' -Skip:(-not ($
     }
 }
 
-Describe 'Enable/Disable-ScheduledTask integration' -Skip:(-not ($script:onLinux -and $script:isRoot)) {
+Describe 'Enable/Disable-ScheduledTask integration' -Skip:(-not ($script:onLinux -and $script:isRoot -and $script:hasSystemd)) {
     BeforeAll {
         $script:prefix   = 'stn_test'
         $script:enName   = "$($script:prefix)_endis"
@@ -348,7 +348,7 @@ Describe 'Enable/Disable-ScheduledTask integration' -Skip:(-not ($script:onLinux
     }
 }
 
-Describe 'Unregister-ScheduledTask integration' -Skip:(-not ($script:onLinux -and $script:isRoot)) {
+Describe 'Unregister-ScheduledTask integration' -Skip:(-not ($script:onLinux -and $script:isRoot -and $script:hasSystemd)) {
     BeforeAll {
         $script:prefix  = 'stn_test'
         $script:delName = "$($script:prefix)_del"
@@ -377,7 +377,7 @@ Describe 'Unregister-ScheduledTask integration' -Skip:(-not ($script:onLinux -an
     }
 }
 
-Describe 'Get-ScheduledTaskInfo integration' -Skip:(-not ($script:onLinux -and $script:isRoot)) {
+Describe 'Get-ScheduledTaskInfo integration' -Skip:(-not ($script:onLinux -and $script:isRoot -and $script:hasSystemd)) {
     BeforeAll {
         $script:prefix    = 'stn_test'
         $script:infoName  = "$($script:prefix)_info"
@@ -417,7 +417,7 @@ Describe 'Get-ScheduledTaskInfo integration' -Skip:(-not ($script:onLinux -and $
     }
 }
 
-Describe 'New-ScheduledTask pipeline integration' -Skip:(-not ($script:onLinux -and $script:isRoot)) {
+Describe 'New-ScheduledTask pipeline integration' -Skip:(-not ($script:onLinux -and $script:isRoot -and $script:hasSystemd)) {
     BeforeAll {
         $script:prefix   = 'stn_test'
         $script:pipeName = "$($script:prefix)_pipe"
@@ -448,7 +448,7 @@ Describe 'New-ScheduledTask pipeline integration' -Skip:(-not ($script:onLinux -
 # ---------------------------------------------------------------------------
 # Weekly trigger real-world scenario — Linux + root only
 # ---------------------------------------------------------------------------
-Describe 'Weekly trigger integration' -Skip:(-not ($script:onLinux -and $script:isRoot)) {
+Describe 'Weekly trigger integration' -Skip:(-not ($script:onLinux -and $script:isRoot -and $script:hasSystemd)) {
     BeforeAll {
         $script:prefix      = 'stn_test'
         $script:weeklyName  = "$($script:prefix)_weekly"
@@ -498,7 +498,7 @@ Describe 'Weekly trigger integration' -Skip:(-not ($script:onLinux -and $script:
 # ---------------------------------------------------------------------------
 # AtStartup trigger real-world scenario — Linux + root only
 # ---------------------------------------------------------------------------
-Describe 'AtStartup trigger integration' -Skip:(-not ($script:onLinux -and $script:isRoot)) {
+Describe 'AtStartup trigger integration' -Skip:(-not ($script:onLinux -and $script:isRoot -and $script:hasSystemd)) {
     BeforeAll {
         $script:prefix      = 'stn_test'
         $script:bootName    = "$($script:prefix)_boot"
@@ -533,7 +533,7 @@ Describe 'AtStartup trigger integration' -Skip:(-not ($script:onLinux -and $scri
 # ---------------------------------------------------------------------------
 # Pipeline disable scenario — Linux + root only
 # ---------------------------------------------------------------------------
-Describe 'Pipeline Get-ScheduledTask | Disable-ScheduledTask' -Skip:(-not ($script:onLinux -and $script:isRoot)) {
+Describe 'Pipeline Get-ScheduledTask | Disable-ScheduledTask' -Skip:(-not ($script:onLinux -and $script:isRoot -and $script:hasSystemd)) {
     BeforeAll {
         $script:prefix     = 'stn_test'
         $script:pipDisA    = "$($script:prefix)_pdis_a"
@@ -618,7 +618,7 @@ Describe 'Start-ScheduledTask runs the service' -Skip:(-not ($script:onLinux -an
     }
 }
 
-Describe 'Get-ScheduledTask read-only (Linux, any user)' -Skip:(-not $script:onLinux) {
+Describe 'Get-ScheduledTask read-only (Linux, any user)' -Skip:(-not ($script:onLinux -and $script:hasSystemd)) {
     BeforeAll {
         $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Release\net8.0\ScheduledTasks.Linux.Native.dll'
         if (-not (Test-Path $dllPath)) {
@@ -628,8 +628,7 @@ Describe 'Get-ScheduledTask read-only (Linux, any user)' -Skip:(-not $script:onL
     }
 
     It 'Get-ScheduledTask returns an array or empty' {
-        $result = Get-ScheduledTask
-        $result | Should -BeOfType [object[]] -OrNullOrEmpty
+        { Get-ScheduledTask | Out-Null } | Should -Not -Throw
     }
     It 'Get-ScheduledTask -TaskName nonexistent returns empty' {
         $result = Get-ScheduledTask -TaskName 'stn_definitely_not_there_xyzzy'

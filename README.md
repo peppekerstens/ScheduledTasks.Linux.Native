@@ -81,17 +81,40 @@ Unregister-ScheduledTask -TaskName 'NightlyBackup' -Confirm:$false
 
 ## CI / Testing
 
-Tested across 5 Linux distributions in containers on every push:
+Tested across 5 Linux distributions in containers on every push. Integration tests require `--privileged` (systemctl needs elevated access):
 
 | Distro | Image |
 |---|---|
-| Ubuntu 24.04 | `ghcr.io/peppekerstens/pwsh-pester-ubuntu:24.04` |
-| Debian 12 | `ghcr.io/peppekerstens/pwsh-pester-debian:12` |
-| Fedora 40 | `ghcr.io/peppekerstens/pwsh-pester-fedora:40` |
-| openSUSE Tumbleweed | `ghcr.io/peppekerstens/pwsh-pester-opensuse:tumbleweed` |
-| Arch Linux | `ghcr.io/peppekerstens/pwsh-pester-arch:latest` |
+| Ubuntu 22.04 | `peppekerstens/testinfra:ubuntu2204` |
+| Ubuntu 24.04 | `peppekerstens/testinfra:ubuntu2404` |
+| Debian 12 | `peppekerstens/testinfra:debian12` |
+| Fedora 41 | `peppekerstens/testinfra:fedora41` |
+| openSUSE Tumbleweed | `peppekerstens/testinfra:opensuse-tumbleweed` |
 
-Run locally (requires Docker or a Linux system with systemd):
+### Test scenarios
+
+| Describe block | Scope | Tests |
+|---|---|---|
+| Module surface | everywhere | 15 cmdlet export checks |
+| New-ScheduledTaskAction | everywhere | Execute, Arguments, WorkingDirectory, mandatory check |
+| New-ScheduledTaskTrigger | everywhere | Once, Daily, Weekly (Mon/Wed/Fri), AtStartup, AtLogOn |
+| New-ScheduledTaskPrincipal | everywhere | RunLevel default, Highest, invalid rejection |
+| New-ScheduledTaskSettingsSet | everywhere | Enabled default, -Disable, RestartCount/Interval |
+| New-ScheduledTask | everywhere | Combined Action + Description |
+| WhatIf safety | everywhere | Register/Unregister/Enable/Disable/Start/Stop -WhatIf |
+| Stub cmdlets | everywhere | Set-ScheduledTask, Export-ScheduledTask error records |
+| Register-ScheduledTask / Get-ScheduledTask | Linux + root | Register, wildcard filter, Force overwrite, duplicate throws, unit files on disk, OnCalendar content |
+| Enable/Disable-ScheduledTask | Linux + root | Enable/Disable return RegisteredTask |
+| Unregister-ScheduledTask | Linux + root | Unit files removed, task gone from Get-ScheduledTask |
+| Get-ScheduledTaskInfo | Linux + root | TaskName match, NextRunTime type |
+| New-ScheduledTask pipeline | Linux + root | New-ScheduledTask \| Register-ScheduledTask |
+| **Weekly trigger** | **Linux + root** | **Timer file contains Mon/Wed/Fri, Get-ScheduledTaskInfo NextRunTime** |
+| **AtStartup trigger** | **Linux + root** | **Timer file contains boot, task visible** |
+| **Pipeline disable** | **Linux + root** | **Get-ScheduledTask wildcard \| Disable/Enable-ScheduledTask** |
+| **Start-ScheduledTask runs** | **Linux + root + systemd** | **Marker file created, Get-ScheduledTaskInfo LastRunTime** |
+| Get-ScheduledTask read-only | Linux (any user) | Returns array or empty, nonexistent name returns empty |
+
+Run locally (requires systemd):
 
 ```powershell
 Invoke-Pester -Path tests/ScheduledTasks.Linux.Native.Tests/ -Output Detailed
@@ -115,6 +138,7 @@ Invoke-Pester -Path tests/ScheduledTasks.Linux.Native.Tests/ -Output Detailed
 | Version | Changes |
 |---|---|
 | 0.1.0 | Initial release. 13 full cmdlets, 2 stubs. 63 Pester tests. `getuid()` P/Invoke replaces `id -u` subprocess. |
+| 0.2.0 | Test expansion. Weekly/AtStartup trigger integration tests; pipeline bulk disable/enable; `Start-ScheduledTask` marker-file run test; `Get-ScheduledTaskInfo` LastRunTime assertion; `$script:hasSystemd` guard for start-service tests. |
 
 ---
 

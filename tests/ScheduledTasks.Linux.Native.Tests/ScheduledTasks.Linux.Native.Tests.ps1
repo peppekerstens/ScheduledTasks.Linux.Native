@@ -4,10 +4,12 @@
 # Test timers are prefixed 'stn_test_' to avoid clashing with real units.
 
 BeforeDiscovery {
-    $script:isRoot   = (& id -u) -eq '0'
-    $script:isLinux  = $IsLinux
-    $script:prefix   = 'stn_test'
-    $script:taskName = "$($script:prefix)_daily"
+    $script:isRoot     = $IsLinux -and ((& id -u) -eq '0')
+    $script:isLinux    = $IsLinux
+    $script:prefix     = 'stn_test'
+    $script:taskName   = "$($script:prefix)_daily"
+    # systemd is active only when PID 1 is systemd (not in most Docker containers)
+    $script:hasSystemd = $IsLinux -and (Test-Path '/run/systemd/private')
 }
 
 # ---------------------------------------------------------------------------
@@ -438,6 +440,179 @@ Describe 'New-ScheduledTask pipeline integration' -Skip:(-not ($script:isLinux -
             -Description 'Pester pipeline test'
         { $task | Register-ScheduledTask -TaskName $script:pipeName -Force } | Should -Not -Throw
         Get-ScheduledTask -TaskName $script:pipeName | Should -Not -BeNullOrEmpty
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Weekly trigger real-world scenario — Linux + root only
+# ---------------------------------------------------------------------------
+Describe 'Weekly trigger integration' -Skip:(-not ($script:isLinux -and $script:isRoot)) {
+    BeforeAll {
+        $script:prefix      = 'stn_test'
+        $script:weeklyName  = "$($script:prefix)_weekly"
+
+        $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Release\net8.0\ScheduledTasks.Linux.Native.dll'
+        if (-not (Test-Path $dllPath)) {
+            $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Debug\net8.0\ScheduledTasks.Linux.Native.dll'
+        }
+        Import-Module $dllPath -Force
+
+        Unregister-ScheduledTask -TaskName $script:weeklyName -Confirm:$false -ErrorAction SilentlyContinue
+
+        $action  = New-ScheduledTaskAction -Execute '/bin/true'
+        $trigger = New-ScheduledTaskTrigger -Weekly -At '02:30' -DaysOfWeek Monday,Wednesday,Friday
+        Register-ScheduledTask -TaskName $script:weeklyName -Action $action -Trigger $trigger `
+            -Description 'Pester weekly trigger test' -Force
+    }
+
+    AfterAll {
+        Unregister-ScheduledTask -TaskName $script:weeklyName -Confirm:$false -ErrorAction SilentlyContinue
+    }
+
+    It 'timer file contains Mon' {
+        $content = Get-Content "/etc/systemd/system/$($script:weeklyName).timer" -Raw
+        $content | Should -Match 'Mon'
+    }
+    It 'timer file contains Wed' {
+        $content = Get-Content "/etc/systemd/system/$($script:weeklyName).timer" -Raw
+        $content | Should -Match 'Wed'
+    }
+    It 'timer file contains Fri' {
+        $content = Get-Content "/etc/systemd/system/$($script:weeklyName).timer" -Raw
+        $content | Should -Match 'Fri'
+    }
+    It 'task appears in Get-ScheduledTask' {
+        Get-ScheduledTask -TaskName $script:weeklyName | Should -Not -BeNullOrEmpty
+    }
+    It 'Get-ScheduledTaskInfo returns NextRunTime as DateTime or null' {
+        $info = Get-ScheduledTaskInfo -TaskName $script:weeklyName
+        $info | Should -Not -BeNullOrEmpty
+        if ($null -ne $info.NextRunTime) {
+            $info.NextRunTime | Should -BeOfType [datetime]
+        }
+    }
+}
+
+# ---------------------------------------------------------------------------
+# AtStartup trigger real-world scenario — Linux + root only
+# ---------------------------------------------------------------------------
+Describe 'AtStartup trigger integration' -Skip:(-not ($script:isLinux -and $script:isRoot)) {
+    BeforeAll {
+        $script:prefix      = 'stn_test'
+        $script:bootName    = "$($script:prefix)_boot"
+
+        $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Release\net8.0\ScheduledTasks.Linux.Native.dll'
+        if (-not (Test-Path $dllPath)) {
+            $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Debug\net8.0\ScheduledTasks.Linux.Native.dll'
+        }
+        Import-Module $dllPath -Force
+
+        Unregister-ScheduledTask -TaskName $script:bootName -Confirm:$false -ErrorAction SilentlyContinue
+
+        $action  = New-ScheduledTaskAction -Execute '/bin/true'
+        $trigger = New-ScheduledTaskTrigger -AtStartup
+        Register-ScheduledTask -TaskName $script:bootName -Action $action -Trigger $trigger `
+            -Description 'Pester boot trigger test' -Force
+    }
+
+    AfterAll {
+        Unregister-ScheduledTask -TaskName $script:bootName -Confirm:$false -ErrorAction SilentlyContinue
+    }
+
+    It 'timer file contains boot' {
+        $content = Get-Content "/etc/systemd/system/$($script:bootName).timer" -Raw
+        $content | Should -Match 'boot'
+    }
+    It 'task appears in Get-ScheduledTask' {
+        Get-ScheduledTask -TaskName $script:bootName | Should -Not -BeNullOrEmpty
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Pipeline disable scenario — Linux + root only
+# ---------------------------------------------------------------------------
+Describe 'Pipeline Get-ScheduledTask | Disable-ScheduledTask' -Skip:(-not ($script:isLinux -and $script:isRoot)) {
+    BeforeAll {
+        $script:prefix     = 'stn_test'
+        $script:pipDisA    = "$($script:prefix)_pdis_a"
+        $script:pipDisB    = "$($script:prefix)_pdis_b"
+
+        $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Release\net8.0\ScheduledTasks.Linux.Native.dll'
+        if (-not (Test-Path $dllPath)) {
+            $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Debug\net8.0\ScheduledTasks.Linux.Native.dll'
+        }
+        Import-Module $dllPath -Force
+
+        foreach ($n in @($script:pipDisA, $script:pipDisB)) {
+            Unregister-ScheduledTask -TaskName $n -Confirm:$false -ErrorAction SilentlyContinue
+            $action  = New-ScheduledTaskAction -Execute '/bin/true'
+            $trigger = New-ScheduledTaskTrigger -Daily -At '01:00'
+            Register-ScheduledTask -TaskName $n -Action $action -Trigger $trigger -Force
+        }
+    }
+
+    AfterAll {
+        foreach ($n in @($script:pipDisA, $script:pipDisB)) {
+            Unregister-ScheduledTask -TaskName $n -Confirm:$false -ErrorAction SilentlyContinue
+        }
+    }
+
+    It 'Get-ScheduledTask wildcard | Disable-ScheduledTask disables all matches' {
+        { Get-ScheduledTask -TaskName "$($script:prefix)_pdis*" | Disable-ScheduledTask } | Should -Not -Throw
+    }
+    It 'Get-ScheduledTask wildcard | Enable-ScheduledTask re-enables all matches' {
+        { Get-ScheduledTask -TaskName "$($script:prefix)_pdis*" | Enable-ScheduledTask } | Should -Not -Throw
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Start-ScheduledTask actually runs the service — Linux + root only
+# ---------------------------------------------------------------------------
+Describe 'Start-ScheduledTask runs the service' -Skip:(-not ($script:isLinux -and $script:isRoot -and $script:hasSystemd)) {
+    BeforeAll {
+        $script:prefix   = 'stn_test'
+        $script:runName  = "$($script:prefix)_run"
+
+        $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Release\net8.0\ScheduledTasks.Linux.Native.dll'
+        if (-not (Test-Path $dllPath)) {
+            $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Debug\net8.0\ScheduledTasks.Linux.Native.dll'
+        }
+        Import-Module $dllPath -Force
+
+        Unregister-ScheduledTask -TaskName $script:runName -Confirm:$false -ErrorAction SilentlyContinue
+
+        # Use a fast-completing command so the service exits quickly
+        $tmpFile = "/tmp/$($script:runName).marker"
+        Remove-Item $tmpFile -Force -ErrorAction SilentlyContinue
+        $action  = New-ScheduledTaskAction -Execute '/bin/touch' -Argument $tmpFile
+        $trigger = New-ScheduledTaskTrigger -Daily -At '23:59'
+        Register-ScheduledTask -TaskName $script:runName -Action $action -Trigger $trigger -Force
+        $script:markerFile = $tmpFile
+    }
+
+    AfterAll {
+        Unregister-ScheduledTask -TaskName $script:runName -Confirm:$false -ErrorAction SilentlyContinue
+        Remove-Item $script:markerFile -Force -ErrorAction SilentlyContinue
+    }
+
+    It 'Start-ScheduledTask does not throw' {
+        { Start-ScheduledTask -TaskName $script:runName } | Should -Not -Throw
+    }
+    It 'marker file created within 5 seconds' {
+        # Give systemd up to 5 s to launch and complete the service
+        $deadline = (Get-Date).AddSeconds(5)
+        while (-not (Test-Path $script:markerFile) -and (Get-Date) -lt $deadline) {
+            Start-Sleep -Milliseconds 200
+        }
+        $script:markerFile | Should -Exist
+    }
+    It 'Get-ScheduledTaskInfo LastRunTime is a recent DateTime' {
+        $info = Get-ScheduledTaskInfo -TaskName $script:runName
+        $info | Should -Not -BeNullOrEmpty
+        if ($null -ne $info.LastRunTime) {
+            $info.LastRunTime | Should -BeOfType [datetime]
+            $info.LastRunTime | Should -BeGreaterThan (Get-Date).AddMinutes(-2)
+        }
     }
 }
 

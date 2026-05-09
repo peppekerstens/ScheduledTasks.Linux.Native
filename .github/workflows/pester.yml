@@ -12,13 +12,16 @@ jobs:
     strategy:
       matrix:
         container:
-          - peppekerstens/testinfra:ubuntu2204
-          - peppekerstens/testinfra:ubuntu2404
-          - peppekerstens/testinfra:debian12
-          - peppekerstens/testinfra:fedora41
-          - peppekerstens/testinfra:opensuse-tumbleweed
+          - ghcr.io/peppekerstens/pwsh-pester-ubuntu:24.04
+          - ghcr.io/peppekerstens/pwsh-pester-debian:12
+          - ghcr.io/peppekerstens/pwsh-pester-fedora:40
+          - ghcr.io/peppekerstens/pwsh-pester-opensuse:tumbleweed
+          - ghcr.io/peppekerstens/pwsh-pester-arch:latest
     container:
       image: ${{ matrix.container }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
       options: --privileged
 
     steps:
@@ -31,10 +34,6 @@ jobs:
 
       - name: Build (Release)
         run: dotnet build src/ScheduledTasks.Linux.Native/ScheduledTasks.Linux.Native.csproj --configuration Release
-
-      - name: Install Pester
-        shell: pwsh
-        run: Install-Module Pester -MinimumVersion 5.2.0 -Force -Scope AllUsers
 
       - name: Run Pester tests
         shell: pwsh

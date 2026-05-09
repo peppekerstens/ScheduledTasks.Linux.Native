@@ -1,8 +1,13 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 // Helpers/SystemdHelpers.cs
 // Core systemd interaction layer for ScheduledTasks.Linux.Native.
 // All reads are done via `systemctl` JSON output; all writes use `systemctl`/file I/O.
+// GetCurrentUid() uses P/Invoke getuid() — no subprocess.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 

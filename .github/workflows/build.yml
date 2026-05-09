@@ -1,0 +1,27 @@
+name: build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+
+      - name: Restore
+        run: dotnet restore src/ScheduledTasks.Linux.Native/ScheduledTasks.Linux.Native.csproj
+
+      - name: Build (Release)
+        run: dotnet build src/ScheduledTasks.Linux.Native/ScheduledTasks.Linux.Native.csproj --configuration Release --no-restore
+
+      - name: Build (Debug)
+        run: dotnet build src/ScheduledTasks.Linux.Native/ScheduledTasks.Linux.Native.csproj --configuration Debug --no-restore

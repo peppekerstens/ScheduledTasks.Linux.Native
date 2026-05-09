@@ -1,0 +1,46 @@
+name: pester
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  pester:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        container:
+          - peppekerstens/testinfra:ubuntu2204
+          - peppekerstens/testinfra:ubuntu2404
+          - peppekerstens/testinfra:debian12
+          - peppekerstens/testinfra:fedora41
+          - peppekerstens/testinfra:opensuse-tumbleweed
+    container:
+      image: ${{ matrix.container }}
+      options: --privileged
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+
+      - name: Build (Release)
+        run: dotnet build src/ScheduledTasks.Linux.Native/ScheduledTasks.Linux.Native.csproj --configuration Release
+
+      - name: Install Pester
+        shell: pwsh
+        run: Install-Module Pester -MinimumVersion 5.2.0 -Force -Scope AllUsers
+
+      - name: Run Pester tests
+        shell: pwsh
+        run: |
+          $config = New-PesterConfiguration
+          $config.Run.Path = 'tests/ScheduledTasks.Linux.Native.Tests/ScheduledTasks.Linux.Native.Tests.ps1'
+          $config.Run.Exit = $true
+          $config.Output.Verbosity = 'Detailed'
+          Invoke-Pester -Configuration $config

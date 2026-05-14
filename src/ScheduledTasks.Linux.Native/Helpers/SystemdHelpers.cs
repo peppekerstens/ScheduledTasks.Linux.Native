@@ -4,7 +4,7 @@
 // Helpers/SystemdHelpers.cs
 // Core systemd interaction layer for ScheduledTasks.Linux.Native.
 // All reads are done via `systemctl` JSON output; all writes use `systemctl`/file I/O.
-// GetCurrentUid() uses P/Invoke getuid() — no subprocess.
+// GetCurrentUid() uses a subprocess (id -u).
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -43,7 +43,7 @@ internal static class SystemdHelpers
     {
         try
         {
-            var r = Run("id", "-u");
+            var r = Run("id", ["-u"]);
             return int.TryParse(r.Stdout.Trim(), out int uid) ? uid : -1;
         }
         catch { return -1; }
@@ -140,9 +140,6 @@ internal static class SystemdHelpers
     {
         var unitName = SanitizeName(task.TaskName);
         bool isSystem = task.TaskPath == @"\";
-        var showArgs  = isSystem
-            ? new[] { "show", $"{unitName}.timer", "--no-pager" }
-            : new[] { "--user", "show", $"{unitName}.timer", "--no-pager" };
         var output = RunSystemctl(isSystem ? null : "--user", "show", $"{unitName}.timer", "--no-pager").Stdout;
 
         var props = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -205,11 +202,11 @@ internal static class SystemdHelpers
 
         var svcContent =
             $"[Unit]\n" +
-            $"Description={description}\n" +
+            $"Description={Sanitize(description)}\n" +
             (string.IsNullOrEmpty(afterNet) ? "" : $"{afterNet}\n") +
             $"\n[Service]\n" +
             $"Type=oneshot\n" +
-            $"ExecStart={execStart}\n" +
+            $"ExecStart={Sanitize(execStart)}\n" +
             (string.IsNullOrEmpty(workDir)  ? "" : $"{workDir}\n") +
             (string.IsNullOrEmpty(userLine) ? "" : $"{userLine}\n") +
             (string.IsNullOrEmpty(restart)  ? "" : $"{restart}\n") +
@@ -228,7 +225,7 @@ internal static class SystemdHelpers
 
         var tmrContent =
             $"[Unit]\n" +
-            $"Description=Timer for {description}\n" +
+            $"Description=Timer for {Sanitize(description)}\n" +
             $"\n[Timer]\n" +
             $"{timerSchedule}\n" +
             $"Persistent=true\n" +
@@ -307,6 +304,8 @@ internal static class SystemdHelpers
     // Low-level helpers
     // -----------------------------------------------------------------------
 
+    static string Sanitize(string s) => s.Replace('\n', ' ').Replace('\r', ' ');
+
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -349,21 +348,23 @@ internal static class SystemdHelpers
         var allArgs = userFlag != null
             ? new[] { userFlag }.Concat(args).ToArray()
             : args;
-        return Run("systemctl", string.Join(' ', allArgs.Select(a => a.Contains(' ') ? $"\"{a}\"" : a)));
+        return Run("systemctl", allArgs);
     }
 
-    private static (string Stdout, int ExitCode) Run(string executable, string arguments)
+    private static (string Stdout, int ExitCode) Run(string executable, IEnumerable<string> args)
     {
-        var psi = new ProcessStartInfo(executable, arguments)
+        var psi = new ProcessStartInfo(executable)
         {
             RedirectStandardOutput = true,
             RedirectStandardError  = true,
             UseShellExecute        = false,
         };
+        foreach (var a in args) psi.ArgumentList.Add(a);
         using var proc = Process.Start(psi)!;
-        var stdout = proc.StandardOutput.ReadToEnd();
+        var stdout = proc.StandardOutput.ReadToEndAsync();
+        var stderr = proc.StandardError.ReadToEndAsync();
         proc.WaitForExit();
-        return (stdout, proc.ExitCode);
+        return (stdout.Result, proc.ExitCode);
     }
 
     private static DateTime? ParseUsec(string? value)

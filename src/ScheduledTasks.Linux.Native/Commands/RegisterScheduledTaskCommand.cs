@@ -74,6 +74,13 @@ public sealed class RegisterScheduledTaskCommand : PSCmdlet
                 TaskName, TaskPath, actions, triggers, principal, settings, desc, Force.IsPresent);
             WriteObject(task);
         }
+        catch (UnauthorizedAccessException)
+        {
+            WriteError(new ErrorRecord(
+                new InvalidOperationException("Register-ScheduledTask requires root privileges."),
+                "ElevationRequired", ErrorCategory.PermissionDenied, TaskName));
+            return;
+        }
         catch (InvalidOperationException ex)
         {
             WriteError(new ErrorRecord(ex, "RegisterFailed", ErrorCategory.InvalidOperation, TaskName));

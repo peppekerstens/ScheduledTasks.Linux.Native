@@ -21,6 +21,16 @@ public sealed class StartScheduledTaskCommand : PSCmdlet
     protected override void ProcessRecord()
     {
         if (!ShouldProcess(TaskName, "Start-ScheduledTask")) return;
-        SystemdHelpers.ControlService(TaskName, TaskPath, "start");
+        try
+        {
+            SystemdHelpers.ControlService(TaskName, TaskPath, "start");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            WriteError(new ErrorRecord(
+                new InvalidOperationException("Start-ScheduledTask requires root privileges."),
+                "ElevationRequired", ErrorCategory.PermissionDenied, TaskName));
+            return;
+        }
     }
 }

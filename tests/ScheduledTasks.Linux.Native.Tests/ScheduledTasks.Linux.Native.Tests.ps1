@@ -254,6 +254,74 @@ Describe 'Stub cmdlets' {
 }
 
 # ---------------------------------------------------------------------------
+# Elevation errors (run when not root)
+# ---------------------------------------------------------------------------
+Describe 'Elevation errors' -Skip:($script:onLinux -and $script:isRoot) {
+    BeforeAll {
+        $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Release\net8.0\ScheduledTasks.Linux.Native.dll'
+        if (-not (Test-Path $dllPath)) {
+            $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Debug\net8.0\ScheduledTasks.Linux.Native.dll'
+        }
+        Import-Module $dllPath -Force
+    }
+
+    It 'Register-ScheduledTask writes a meaningful error when not root' {
+        $err = @()
+        $a = New-ScheduledTaskAction -Execute '/bin/true'
+        Register-ScheduledTask -TaskName 'stn_elev' -Action $a -ErrorVariable err -ErrorAction SilentlyContinue
+        $err.Count | Should -BeGreaterThan 0
+        $err[0].Exception.Message | Should -Be 'Register-ScheduledTask requires root privileges.'
+        $err[0].FullyQualifiedErrorId | Should -Be 'ElevationRequired,Microsoft.PowerShell.Commands.RegisterScheduledTaskCommand'
+        $err[0].CategoryInfo.Category | Should -Be 'PermissionDenied'
+    }
+
+    It 'Unregister-ScheduledTask writes a meaningful error when not root' {
+        $err = @()
+        Unregister-ScheduledTask -TaskName 'stn_elev_nonexistent' -ErrorVariable err -ErrorAction SilentlyContinue
+        $err.Count | Should -BeGreaterThan 0
+        $err[0].Exception.Message | Should -Be 'Unregister-ScheduledTask requires root privileges.'
+        $err[0].FullyQualifiedErrorId | Should -Be 'ElevationRequired,Microsoft.PowerShell.Commands.UnregisterScheduledTaskCommand'
+        $err[0].CategoryInfo.Category | Should -Be 'PermissionDenied'
+    }
+
+    It 'Enable-ScheduledTask writes a meaningful error when not root' {
+        $err = @()
+        Enable-ScheduledTask -TaskName 'stn_elev_ne' -ErrorVariable err -ErrorAction SilentlyContinue
+        $err.Count | Should -BeGreaterThan 0
+        $err[0].Exception.Message | Should -Be 'Enable-ScheduledTask requires root privileges.'
+        $err[0].FullyQualifiedErrorId | Should -Be 'ElevationRequired,Microsoft.PowerShell.Commands.EnableScheduledTaskCommand'
+        $err[0].CategoryInfo.Category | Should -Be 'PermissionDenied'
+    }
+
+    It 'Disable-ScheduledTask writes a meaningful error when not root' {
+        $err = @()
+        Disable-ScheduledTask -TaskName 'stn_elev_ne' -ErrorVariable err -ErrorAction SilentlyContinue
+        $err.Count | Should -BeGreaterThan 0
+        $err[0].Exception.Message | Should -Be 'Disable-ScheduledTask requires root privileges.'
+        $err[0].FullyQualifiedErrorId | Should -Be 'ElevationRequired,Microsoft.PowerShell.Commands.DisableScheduledTaskCommand'
+        $err[0].CategoryInfo.Category | Should -Be 'PermissionDenied'
+    }
+
+    It 'Start-ScheduledTask writes a meaningful error when not root' {
+        $err = @()
+        Start-ScheduledTask -TaskName 'stn_elev_ne' -ErrorVariable err -ErrorAction SilentlyContinue
+        $err.Count | Should -BeGreaterThan 0
+        $err[0].Exception.Message | Should -Be 'Start-ScheduledTask requires root privileges.'
+        $err[0].FullyQualifiedErrorId | Should -Be 'ElevationRequired,Microsoft.PowerShell.Commands.StartScheduledTaskCommand'
+        $err[0].CategoryInfo.Category | Should -Be 'PermissionDenied'
+    }
+
+    It 'Stop-ScheduledTask writes a meaningful error when not root' {
+        $err = @()
+        Stop-ScheduledTask -TaskName 'stn_elev_ne' -ErrorVariable err -ErrorAction SilentlyContinue
+        $err.Count | Should -BeGreaterThan 0
+        $err[0].Exception.Message | Should -Be 'Stop-ScheduledTask requires root privileges.'
+        $err[0].FullyQualifiedErrorId | Should -Be 'ElevationRequired,Microsoft.PowerShell.Commands.StopScheduledTaskCommand'
+        $err[0].CategoryInfo.Category | Should -Be 'PermissionDenied'
+    }
+}
+
+# ---------------------------------------------------------------------------
 # Integration tests — Linux + root only
 # ---------------------------------------------------------------------------
 Describe 'Register-ScheduledTask / Get-ScheduledTask integration' -Skip:(-not ($script:onLinux -and $script:isRoot -and $script:hasSystemd)) {

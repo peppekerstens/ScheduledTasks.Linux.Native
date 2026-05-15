@@ -21,6 +21,16 @@ public sealed class StopScheduledTaskCommand : PSCmdlet
     protected override void ProcessRecord()
     {
         if (!ShouldProcess(TaskName, "Stop-ScheduledTask")) return;
-        SystemdHelpers.ControlService(TaskName, TaskPath, "stop");
+        try
+        {
+            SystemdHelpers.ControlService(TaskName, TaskPath, "stop");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            WriteError(new ErrorRecord(
+                new InvalidOperationException("Stop-ScheduledTask requires root privileges."),
+                "ElevationRequired", ErrorCategory.PermissionDenied, TaskName));
+            return;
+        }
     }
 }

@@ -22,6 +22,16 @@ public sealed class UnregisterScheduledTaskCommand : PSCmdlet
     protected override void ProcessRecord()
     {
         if (!ShouldProcess(TaskName, "Unregister-ScheduledTask")) return;
-        SystemdHelpers.UnregisterTask(TaskName, TaskPath);
+        try
+        {
+            SystemdHelpers.UnregisterTask(TaskName, TaskPath);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            WriteError(new ErrorRecord(
+                new InvalidOperationException("Unregister-ScheduledTask requires root privileges."),
+                "ElevationRequired", ErrorCategory.PermissionDenied, TaskName));
+            return;
+        }
     }
 }

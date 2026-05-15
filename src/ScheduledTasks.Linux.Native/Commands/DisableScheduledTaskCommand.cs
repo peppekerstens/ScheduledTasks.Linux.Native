@@ -22,8 +22,18 @@ public sealed class DisableScheduledTaskCommand : PSCmdlet
     protected override void ProcessRecord()
     {
         if (!ShouldProcess(TaskName, "Disable-ScheduledTask")) return;
-        SystemdHelpers.DisableTask(TaskName, TaskPath);
-        var tasks = SystemdHelpers.ListTasks([TaskName], TaskPath);
-        foreach (var t in tasks) WriteObject(t);
+        try
+        {
+            SystemdHelpers.DisableTask(TaskName, TaskPath);
+            var tasks = SystemdHelpers.ListTasks([TaskName], TaskPath);
+            foreach (var t in tasks) WriteObject(t);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            WriteError(new ErrorRecord(
+                new InvalidOperationException("Disable-ScheduledTask requires root privileges."),
+                "ElevationRequired", ErrorCategory.PermissionDenied, TaskName));
+            return;
+        }
     }
 }

@@ -22,8 +22,18 @@ public sealed class EnableScheduledTaskCommand : PSCmdlet
     protected override void ProcessRecord()
     {
         if (!ShouldProcess(TaskName, "Enable-ScheduledTask")) return;
-        SystemdHelpers.EnableTask(TaskName, TaskPath);
-        var tasks = SystemdHelpers.ListTasks([TaskName], TaskPath);
-        foreach (var t in tasks) WriteObject(t);
+        try
+        {
+            SystemdHelpers.EnableTask(TaskName, TaskPath);
+            var tasks = SystemdHelpers.ListTasks([TaskName], TaskPath);
+            foreach (var t in tasks) WriteObject(t);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            WriteError(new ErrorRecord(
+                new InvalidOperationException("Enable-ScheduledTask requires root privileges."),
+                "ElevationRequired", ErrorCategory.PermissionDenied, TaskName));
+            return;
+        }
     }
 }

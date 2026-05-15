@@ -4,12 +4,12 @@
 # Test timers are prefixed 'stn_test_' to avoid clashing with real units.
 
 BeforeDiscovery {
-    $script:isRoot     = $IsLinux -and (
-                             [System.IO.File]::ReadAllText('/proc/self/status') -match '(?m)^Uid:\s+(\d+)' -and
-                             $Matches[1] -eq '0')
-    $script:onLinux    = $IsLinux
-    $script:prefix     = 'stn_test'
-    $script:taskName   = "$($script:prefix)_daily"
+    $script:isRoot = $IsLinux -and (
+        [System.IO.File]::ReadAllText('/proc/self/status') -match '(?m)^Uid:\s+(\d+)' -and
+        $Matches[1] -eq '0')
+    $script:onLinux = $IsLinux
+    $script:prefix = 'stn_test'
+    $script:taskName = "$($script:prefix)_daily"
     # systemd is active only when PID 1 is systemd (not in most Docker containers)
     $script:hasSystemd = $IsLinux -and (Test-Path '/run/systemd/private')
 }
@@ -116,7 +116,7 @@ Describe 'New-ScheduledTaskTrigger' {
         $t.OnCalendar | Should -Be '*-*-* 08:30:00'
     }
     It 'Weekly trigger includes day names' {
-        $t = New-ScheduledTaskTrigger -Weekly -At '09:00' -DaysOfWeek Monday,Friday
+        $t = New-ScheduledTaskTrigger -Weekly -At '09:00' -DaysOfWeek Monday, Friday
         $t.OnCalendar | Should -Match 'Mon'
         $t.OnCalendar | Should -Match 'Fri'
     }
@@ -243,10 +243,8 @@ Describe 'Stub cmdlets' {
         Import-Module $dllPath -Force
     }
 
-    It 'Set-ScheduledTask writes an error record' {
-        $err = @()
-        Set-ScheduledTask -TaskName 'dummy' -ErrorVariable err -ErrorAction SilentlyContinue
-        $err.Count | Should -BeGreaterThan 0
+    It 'Set-ScheduledTask throws NotImplementedException' {
+        { Set-ScheduledTask -TaskName 'dummy' } | Should -Throw -ExceptionType ([System.NotImplementedException])
     }
     It 'Export-ScheduledTask writes an error record' {
         $err = @()
@@ -260,7 +258,7 @@ Describe 'Stub cmdlets' {
 # ---------------------------------------------------------------------------
 Describe 'Register-ScheduledTask / Get-ScheduledTask integration' -Skip:(-not ($script:onLinux -and $script:isRoot -and $script:hasSystemd)) {
     BeforeAll {
-        $script:prefix   = 'stn_test'
+        $script:prefix = 'stn_test'
         $script:taskName = "$($script:prefix)_daily"
 
         $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Release\net8.0\ScheduledTasks.Linux.Native.dll'
@@ -272,7 +270,7 @@ Describe 'Register-ScheduledTask / Get-ScheduledTask integration' -Skip:(-not ($
         # Ensure clean slate
         Unregister-ScheduledTask -TaskName $script:taskName -Confirm:$false -ErrorAction SilentlyContinue
 
-        $action  = New-ScheduledTaskAction -Execute '/bin/true'
+        $action = New-ScheduledTaskAction -Execute '/bin/true'
         $trigger = New-ScheduledTaskTrigger -Daily -At '03:00'
         $script:registered = Register-ScheduledTask -TaskName $script:taskName `
             -Action $action -Trigger $trigger -Description 'Pester test daily task' -Force
@@ -318,8 +316,8 @@ Describe 'Register-ScheduledTask / Get-ScheduledTask integration' -Skip:(-not ($
 
 Describe 'Enable/Disable-ScheduledTask integration' -Skip:(-not ($script:onLinux -and $script:isRoot -and $script:hasSystemd)) {
     BeforeAll {
-        $script:prefix   = 'stn_test'
-        $script:enName   = "$($script:prefix)_endis"
+        $script:prefix = 'stn_test'
+        $script:enName = "$($script:prefix)_endis"
 
         $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Release\net8.0\ScheduledTasks.Linux.Native.dll'
         if (-not (Test-Path $dllPath)) {
@@ -328,7 +326,7 @@ Describe 'Enable/Disable-ScheduledTask integration' -Skip:(-not ($script:onLinux
         Import-Module $dllPath -Force
 
         Unregister-ScheduledTask -TaskName $script:enName -Confirm:$false -ErrorAction SilentlyContinue
-        $action  = New-ScheduledTaskAction -Execute '/bin/true'
+        $action = New-ScheduledTaskAction -Execute '/bin/true'
         $trigger = New-ScheduledTaskTrigger -Daily -At '04:00'
         Register-ScheduledTask -TaskName $script:enName -Action $action -Trigger $trigger `
             -Description 'Pester enable/disable test' -Force
@@ -350,7 +348,7 @@ Describe 'Enable/Disable-ScheduledTask integration' -Skip:(-not ($script:onLinux
 
 Describe 'Unregister-ScheduledTask integration' -Skip:(-not ($script:onLinux -and $script:isRoot -and $script:hasSystemd)) {
     BeforeAll {
-        $script:prefix  = 'stn_test'
+        $script:prefix = 'stn_test'
         $script:delName = "$($script:prefix)_del"
 
         $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Release\net8.0\ScheduledTasks.Linux.Native.dll'
@@ -360,7 +358,7 @@ Describe 'Unregister-ScheduledTask integration' -Skip:(-not ($script:onLinux -an
         Import-Module $dllPath -Force
 
         Unregister-ScheduledTask -TaskName $script:delName -Confirm:$false -ErrorAction SilentlyContinue
-        $action  = New-ScheduledTaskAction -Execute '/bin/true'
+        $action = New-ScheduledTaskAction -Execute '/bin/true'
         $trigger = New-ScheduledTaskTrigger -AtStartup
         Register-ScheduledTask -TaskName $script:delName -Action $action -Trigger $trigger `
             -Description 'Pester unregister test' -Force
@@ -379,8 +377,8 @@ Describe 'Unregister-ScheduledTask integration' -Skip:(-not ($script:onLinux -an
 
 Describe 'Get-ScheduledTaskInfo integration' -Skip:(-not ($script:onLinux -and $script:isRoot -and $script:hasSystemd)) {
     BeforeAll {
-        $script:prefix    = 'stn_test'
-        $script:infoName  = "$($script:prefix)_info"
+        $script:prefix = 'stn_test'
+        $script:infoName = "$($script:prefix)_info"
 
         $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Release\net8.0\ScheduledTasks.Linux.Native.dll'
         if (-not (Test-Path $dllPath)) {
@@ -389,7 +387,7 @@ Describe 'Get-ScheduledTaskInfo integration' -Skip:(-not ($script:onLinux -and $
         Import-Module $dllPath -Force
 
         Unregister-ScheduledTask -TaskName $script:infoName -Confirm:$false -ErrorAction SilentlyContinue
-        $action  = New-ScheduledTaskAction -Execute '/bin/true'
+        $action = New-ScheduledTaskAction -Execute '/bin/true'
         $trigger = New-ScheduledTaskTrigger -Daily -At '05:00'
         Register-ScheduledTask -TaskName $script:infoName -Action $action -Trigger $trigger `
             -Description 'Pester info test' -Force
@@ -411,7 +409,8 @@ Describe 'Get-ScheduledTaskInfo integration' -Skip:(-not ($script:onLinux -and $
         $info = Get-ScheduledTaskInfo -TaskName $script:infoName
         if ($null -ne $info.NextRunTime) {
             $info.NextRunTime | Should -BeOfType [datetime]
-        } else {
+        }
+        else {
             $info.NextRunTime | Should -BeNullOrEmpty
         }
     }
@@ -419,7 +418,7 @@ Describe 'Get-ScheduledTaskInfo integration' -Skip:(-not ($script:onLinux -and $
 
 Describe 'New-ScheduledTask pipeline integration' -Skip:(-not ($script:onLinux -and $script:isRoot -and $script:hasSystemd)) {
     BeforeAll {
-        $script:prefix   = 'stn_test'
+        $script:prefix = 'stn_test'
         $script:pipeName = "$($script:prefix)_pipe"
 
         $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Release\net8.0\ScheduledTasks.Linux.Native.dll'
@@ -450,8 +449,8 @@ Describe 'New-ScheduledTask pipeline integration' -Skip:(-not ($script:onLinux -
 # ---------------------------------------------------------------------------
 Describe 'Weekly trigger integration' -Skip:(-not ($script:onLinux -and $script:isRoot -and $script:hasSystemd)) {
     BeforeAll {
-        $script:prefix      = 'stn_test'
-        $script:weeklyName  = "$($script:prefix)_weekly"
+        $script:prefix = 'stn_test'
+        $script:weeklyName = "$($script:prefix)_weekly"
 
         $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Release\net8.0\ScheduledTasks.Linux.Native.dll'
         if (-not (Test-Path $dllPath)) {
@@ -461,8 +460,8 @@ Describe 'Weekly trigger integration' -Skip:(-not ($script:onLinux -and $script:
 
         Unregister-ScheduledTask -TaskName $script:weeklyName -Confirm:$false -ErrorAction SilentlyContinue
 
-        $action  = New-ScheduledTaskAction -Execute '/bin/true'
-        $trigger = New-ScheduledTaskTrigger -Weekly -At '02:30' -DaysOfWeek Monday,Wednesday,Friday
+        $action = New-ScheduledTaskAction -Execute '/bin/true'
+        $trigger = New-ScheduledTaskTrigger -Weekly -At '02:30' -DaysOfWeek Monday, Wednesday, Friday
         Register-ScheduledTask -TaskName $script:weeklyName -Action $action -Trigger $trigger `
             -Description 'Pester weekly trigger test' -Force
     }
@@ -500,8 +499,8 @@ Describe 'Weekly trigger integration' -Skip:(-not ($script:onLinux -and $script:
 # ---------------------------------------------------------------------------
 Describe 'AtStartup trigger integration' -Skip:(-not ($script:onLinux -and $script:isRoot -and $script:hasSystemd)) {
     BeforeAll {
-        $script:prefix      = 'stn_test'
-        $script:bootName    = "$($script:prefix)_boot"
+        $script:prefix = 'stn_test'
+        $script:bootName = "$($script:prefix)_boot"
 
         $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Release\net8.0\ScheduledTasks.Linux.Native.dll'
         if (-not (Test-Path $dllPath)) {
@@ -511,7 +510,7 @@ Describe 'AtStartup trigger integration' -Skip:(-not ($script:onLinux -and $scri
 
         Unregister-ScheduledTask -TaskName $script:bootName -Confirm:$false -ErrorAction SilentlyContinue
 
-        $action  = New-ScheduledTaskAction -Execute '/bin/true'
+        $action = New-ScheduledTaskAction -Execute '/bin/true'
         $trigger = New-ScheduledTaskTrigger -AtStartup
         Register-ScheduledTask -TaskName $script:bootName -Action $action -Trigger $trigger `
             -Description 'Pester boot trigger test' -Force
@@ -535,9 +534,9 @@ Describe 'AtStartup trigger integration' -Skip:(-not ($script:onLinux -and $scri
 # ---------------------------------------------------------------------------
 Describe 'Pipeline Get-ScheduledTask | Disable-ScheduledTask' -Skip:(-not ($script:onLinux -and $script:isRoot -and $script:hasSystemd)) {
     BeforeAll {
-        $script:prefix     = 'stn_test'
-        $script:pipDisA    = "$($script:prefix)_pdis_a"
-        $script:pipDisB    = "$($script:prefix)_pdis_b"
+        $script:prefix = 'stn_test'
+        $script:pipDisA = "$($script:prefix)_pdis_a"
+        $script:pipDisB = "$($script:prefix)_pdis_b"
 
         $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Release\net8.0\ScheduledTasks.Linux.Native.dll'
         if (-not (Test-Path $dllPath)) {
@@ -547,7 +546,7 @@ Describe 'Pipeline Get-ScheduledTask | Disable-ScheduledTask' -Skip:(-not ($scri
 
         foreach ($n in @($script:pipDisA, $script:pipDisB)) {
             Unregister-ScheduledTask -TaskName $n -Confirm:$false -ErrorAction SilentlyContinue
-            $action  = New-ScheduledTaskAction -Execute '/bin/true'
+            $action = New-ScheduledTaskAction -Execute '/bin/true'
             $trigger = New-ScheduledTaskTrigger -Daily -At '01:00'
             Register-ScheduledTask -TaskName $n -Action $action -Trigger $trigger -Force
         }
@@ -572,8 +571,8 @@ Describe 'Pipeline Get-ScheduledTask | Disable-ScheduledTask' -Skip:(-not ($scri
 # ---------------------------------------------------------------------------
 Describe 'Start-ScheduledTask runs the service' -Skip:(-not ($script:onLinux -and $script:isRoot -and $script:hasSystemd)) {
     BeforeAll {
-        $script:prefix   = 'stn_test'
-        $script:runName  = "$($script:prefix)_run"
+        $script:prefix = 'stn_test'
+        $script:runName = "$($script:prefix)_run"
 
         $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Release\net8.0\ScheduledTasks.Linux.Native.dll'
         if (-not (Test-Path $dllPath)) {
@@ -586,7 +585,7 @@ Describe 'Start-ScheduledTask runs the service' -Skip:(-not ($script:onLinux -an
         # Use a fast-completing command so the service exits quickly
         $tmpFile = "/tmp/$($script:runName).marker"
         Remove-Item $tmpFile -Force -ErrorAction SilentlyContinue
-        $action  = New-ScheduledTaskAction -Execute '/bin/touch' -Argument $tmpFile
+        $action = New-ScheduledTaskAction -Execute '/bin/touch' -Argument $tmpFile
         $trigger = New-ScheduledTaskTrigger -Daily -At '23:59'
         Register-ScheduledTask -TaskName $script:runName -Action $action -Trigger $trigger -Force
         $script:markerFile = $tmpFile

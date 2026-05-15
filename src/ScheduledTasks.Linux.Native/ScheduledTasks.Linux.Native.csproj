@@ -11,6 +11,14 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <Platforms>x64;arm64</Platforms>
+    <PackageId>ScheduledTasks.Linux.Native</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>peppekerstens</Authors>
+    <Description>Linux Scheduled Tasks module providing Windows-compatible task management cmdlets via systemd timer units.</Description>
+    <PackageTags>PowerShell;Linux;pwsh;Module;ScheduledTasks</PackageTags>
+    <PackageProjectUrl>https://github.com/peppekerstens/ScheduledTasks.Linux.Native</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/peppekerstens/ScheduledTasks.Linux.Native</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,41 +1,42 @@
-name: pester
+name: Pester Tests
 
 on:
   push:
-    branches: [master]
+    branches: [main, master]
   pull_request:
-    branches: [master]
+  workflow_dispatch:
 
 jobs:
-  pester:
+  pester-linux:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        container:
-          - ghcr.io/peppekerstens/pwsh-pester-ubuntu:24.04
-          - ghcr.io/peppekerstens/pwsh-pester-debian:12
-          - ghcr.io/peppekerstens/pwsh-pester-fedora:40
-          - ghcr.io/peppekerstens/pwsh-pester-opensuse:tumbleweed
-          - ghcr.io/peppekerstens/pwsh-pester-arch:latest
+        include:
+          - distro: ubuntu-24.04
+            image: ghcr.io/peppekerstens/pwsh-pester-ubuntu:24.04
+          - distro: debian-12
+            image: ghcr.io/peppekerstens/pwsh-pester-debian:12
+          - distro: fedora-40
+            image: ghcr.io/peppekerstens/pwsh-pester-fedora:40
+          - distro: opensuse-tumbleweed
+            image: ghcr.io/peppekerstens/pwsh-pester-opensuse:tumbleweed
+          - distro: archlinux
+            image: ghcr.io/peppekerstens/pwsh-pester-arch:latest
     container:
-      image: ${{ matrix.container }}
+      image: ${{ matrix.image }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
       options: --privileged
-
     steps:
       - uses: actions/checkout@v4
-
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.x'
-
       - name: Build (Release)
         run: dotnet build src/ScheduledTasks.Linux.Native/ScheduledTasks.Linux.Native.csproj --configuration Release
-
       - name: Run Pester tests
         shell: pwsh
         run: |
@@ -43,4 +44,13 @@ jobs:
           $config.Run.Path = 'tests/ScheduledTasks.Linux.Native.Tests/ScheduledTasks.Linux.Native.Tests.ps1'
           $config.Run.Exit = $true
           $config.Output.Verbosity = 'Detailed'
+          $config.TestResult.Enabled = $true
+          $config.TestResult.OutputFormat = 'NUnitXml'
+          $config.TestResult.OutputPath = 'test-results.xml'
           Invoke-Pester -Configuration $config
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pester-results-${{ matrix.distro }}
+          path: test-results.xml

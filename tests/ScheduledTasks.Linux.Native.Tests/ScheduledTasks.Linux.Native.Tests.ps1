@@ -256,7 +256,7 @@ Describe 'Stub cmdlets' {
 # ---------------------------------------------------------------------------
 # Elevation errors (run when not root)
 # ---------------------------------------------------------------------------
-Describe 'Elevation errors' -Skip:($script:onLinux -and $script:isRoot) {
+Describe 'Elevation errors' -Skip:($script:isRoot -or -not $script:onLinux) {
     BeforeAll {
         $dllPath = Join-Path $PSScriptRoot '..\..\src\ScheduledTasks.Linux.Native\bin\Release\net8.0\ScheduledTasks.Linux.Native.dll'
         if (-not (Test-Path $dllPath)) {

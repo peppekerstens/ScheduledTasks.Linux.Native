@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 // Commands/ExportScheduledTaskCommand.cs
 // Stub: Export-ScheduledTask — not yet implemented.
 using System.Management.Automation;

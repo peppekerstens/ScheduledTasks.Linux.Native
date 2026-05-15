@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 // Commands/UnregisterScheduledTaskCommand.cs
 using System.Management.Automation;
 

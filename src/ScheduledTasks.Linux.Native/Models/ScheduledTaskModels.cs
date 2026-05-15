@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 // Models/ScheduledTaskModels.cs
 // In-memory data types for ScheduledTasks.Linux.Native.
 // These mirror the Windows ScheduledTasks module's object shapes.

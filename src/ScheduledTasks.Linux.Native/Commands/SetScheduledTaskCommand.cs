@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 // Commands/SetScheduledTaskCommand.cs
 // Stub: Set-ScheduledTask — not yet implemented; throws a NotSupportedException.
 using System.Management.Automation;
@@ -7,7 +10,7 @@ namespace Microsoft.PowerShell.Commands;
 /// <summary>
 /// <para type="synopsis">Modifies a scheduled task on Linux (stub — not yet implemented).</para>
 /// </summary>
-[Cmdlet(VerbsCommon.Set, "ScheduledTask", SupportsShouldProcess = true)]
+[Cmdlet(VerbsCommon.Set, "ScheduledTask")]
 [OutputType(typeof(RegisteredTask))]
 public sealed class SetScheduledTaskCommand : PSCmdlet
 {
@@ -24,8 +27,6 @@ public sealed class SetScheduledTaskCommand : PSCmdlet
 
     protected override void ProcessRecord()
     {
-        WriteError(new ErrorRecord(
-            new NotSupportedException("Set-ScheduledTask is not yet implemented in ScheduledTasks.Linux.Native. Use Unregister-ScheduledTask + Register-ScheduledTask to update a task."),
-            "NotImplemented", ErrorCategory.NotImplemented, TaskName));
+        throw new NotImplementedException("Set-ScheduledTask is not supported on Linux.");
     }
 }

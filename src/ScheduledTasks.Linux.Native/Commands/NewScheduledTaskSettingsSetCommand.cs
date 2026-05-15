@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 // Commands/NewScheduledTaskSettingsSetCommand.cs
 using System.Management.Automation;
 

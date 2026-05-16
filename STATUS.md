@@ -26,11 +26,12 @@
 
 Windows ScheduledTasks returns COM interop objects — no .NET class hierarchy to inherit from. Linux POCOs already match property names and types closely.
 
-**Minor gaps (cosmetic):**
-- `TaskPrincipal.RunLevel` is `string` (Windows: `TaskRunLevel` enum)
-- `TaskTrigger.TriggerType` is `string` (Windows: `TaskTriggerType` enum)
-
-These are low-priority string-vs-enum mismatches. No inheritance change needed.
+**Fixed (2026-05-16, commit `030313e`):**
+- `TaskPrincipal.RunLevel` changed from `string` to `TaskRunLevel` enum
+- `TaskTrigger.TriggerType` changed from `string` to `TaskTriggerType` enum
+- Updated cmdlet parameters (`New-ScheduledTaskPrincipal -RunLevel`, `New-ScheduledTaskTrigger`) to use enum types
+- Updated `IsSystemContext()` helper to compare against `TaskRunLevel.Highest`
+- Updated Pester test assertion for default RunLevel (`'LeastPrivilege'` instead of `'Limited'`)
 
 ---
 
@@ -42,8 +43,7 @@ These are low-priority string-vs-enum mismatches. No inheritance change needed.
 
 ## Next Steps
 
-1. (Optional) Convert `RunLevel` and `TriggerType` from `string` to enums
-2. No critical Rule 9 gaps — property alignment is sufficient
+No critical Rule 9 gaps — fully compliant.
 
 ---
 

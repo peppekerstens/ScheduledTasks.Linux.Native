@@ -42,9 +42,19 @@ public sealed class NewScheduledTaskTriggerCommand : PSCmdlet
             _           => "daily",
         };
 
+        TaskTriggerType triggerType = ParameterSetName switch
+        {
+            "Once"      => TaskTriggerType.Time,
+            "Daily"     => TaskTriggerType.Daily,
+            "Weekly"    => TaskTriggerType.Weekly,
+            "AtStartup" => TaskTriggerType.Boot,
+            "AtLogOn"   => TaskTriggerType.Logon,
+            _           => TaskTriggerType.Daily,
+        };
+
         WriteObject(new TaskTrigger
         {
-            TriggerType = ParameterSetName,
+            TriggerType = triggerType,
             At          = ParameterSetName is "Once" or "Daily" or "Weekly" ? At : null,
             DaysOfWeek  = DaysOfWeek?.Select(d => d.ToString()[..3]).ToArray() ?? [],
             RandomDelay = RandomDelay,

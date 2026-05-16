@@ -18,8 +18,7 @@ public sealed class NewScheduledTaskPrincipalCommand : PSCmdlet
         Environment.GetEnvironmentVariable("USER") ?? Environment.UserName;
 
     [Parameter(Position = 1)]
-    [ValidateSet("Limited", "Highest")]
-    public string RunLevel { get; set; } = "Limited";
+    public TaskRunLevel RunLevel { get; set; } = TaskRunLevel.LeastPrivilege;
 
     [Parameter]
     public string Id { get; set; } = "Author";

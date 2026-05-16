@@ -7,6 +7,30 @@
 
 namespace Microsoft.PowerShell.Commands;
 
+/// <summary>Run level for a scheduled task principal.</summary>
+public enum TaskRunLevel
+{
+    LeastPrivilege = 0,
+    Highest = 1,
+}
+
+/// <summary>Type of scheduled task trigger.</summary>
+public enum TaskTriggerType
+{
+    Event = 0,
+    Time = 1,
+    Daily = 2,
+    Weekly = 3,
+    Monthly = 4,
+    MonthlyDOW = 5,
+    Idle = 6,
+    Registration = 7,
+    Boot = 8,
+    Logon = 9,
+    SessionStateChange = 11,
+    Custom = 12,
+}
+
 /// <summary>Represents a registered systemd timer task.</summary>
 public sealed class RegisteredTask
 {
@@ -35,7 +59,7 @@ public sealed class TaskAction
 /// <summary>Represents a task trigger (OnCalendar / OnBootSec).</summary>
 public sealed class TaskTrigger
 {
-    public string    TriggerType  { get; set; } = "Daily";
+    public TaskTriggerType TriggerType  { get; set; } = TaskTriggerType.Daily;
     public DateTime? At           { get; set; }
     public string[]  DaysOfWeek   { get; set; } = [];
     public TimeSpan  RandomDelay  { get; set; } = TimeSpan.Zero;
@@ -50,7 +74,7 @@ public sealed class TaskPrincipal
 {
     public string Id       { get; set; } = "Author";
     public string UserId   { get; set; } = string.Empty;
-    public string RunLevel { get; set; } = "Limited";
+    public TaskRunLevel RunLevel { get; set; } = TaskRunLevel.LeastPrivilege;
 
     public override string ToString() => UserId;
 }

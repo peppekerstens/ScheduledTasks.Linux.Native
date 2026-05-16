@@ -143,9 +143,9 @@ Describe 'New-ScheduledTaskPrincipal' {
         Import-Module $dllPath -Force
     }
 
-    It 'defaults RunLevel to Limited' {
+    It 'defaults RunLevel to LeastPrivilege' {
         $p = New-ScheduledTaskPrincipal -UserId 'testuser'
-        $p.RunLevel | Should -Be 'Limited'
+        $p.RunLevel | Should -Be 'LeastPrivilege'
     }
     It 'accepts Highest RunLevel' {
         $p = New-ScheduledTaskPrincipal -UserId 'root' -RunLevel Highest

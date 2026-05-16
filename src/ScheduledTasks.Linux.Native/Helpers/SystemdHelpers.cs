@@ -24,7 +24,7 @@ internal static class SystemdHelpers
         int uid = GetCurrentUid();
         if (uid != 0) return false;  // non-root → always user context
         if (taskPath == @"\") return true;
-        if (principal?.RunLevel == "Highest") return true;
+        if (principal?.RunLevel == TaskRunLevel.Highest) return true;
         if (principal?.UserId == "root") return true;
         return false;
     }

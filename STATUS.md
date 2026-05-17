@@ -41,6 +41,8 @@ Windows ScheduledTasks returns COM interop objects — no .NET class hierarchy t
 |---|---|---|
 | Non-root users can manage user-context timers without elevation error | ℹ️ By design | `IsSystemContext()` returns false for non-root, uses `--user` flag |
 
+**Tracked on GitHub:** [Issues #1–#9](https://github.com/peppekerstens/ScheduledTasks.Linux.Native/issues) (3 MUST, 6 SHOULD from code audit)
+
 ## Next Steps
 
 No critical Rule 9 gaps — fully compliant.

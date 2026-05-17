@@ -168,6 +168,7 @@ Invoke-Pester -Path tests/ScheduledTasks.Linux.Native.Tests/ -Output Detailed
 | 0.1.0 | Initial release. 13 full cmdlets, 2 stubs. 63 Pester tests. `getuid()` P/Invoke replaces `id -u` subprocess. |
 | 0.2.0 | Test expansion. Weekly/AtStartup trigger integration tests; pipeline bulk disable/enable; `Start-ScheduledTask` marker-file run test; `Get-ScheduledTaskInfo` LastRunTime assertion; `$script:hasSystemd` guard for start-service tests. |
 | 0.3.0 | GHA all-green. Fixed `$script:isLinux` collision → `$script:onLinux`; `fail-fast: false`; all 8 integration `Describe` blocks now guard on `$script:hasSystemd` (not just Start); `BeOfType` null quirk → `Should -Not -Throw`; openSUSE image now includes `gawk`+`findutils`. All 5 distros pass. |
+| 1.0.0 | Rule 9 compliance: `TaskRunLevel`/`TaskTriggerType` string → enum. Elevation error translation. Windows pester tests. `STATUS.md` and `AGENTS.md` added. 22-rule audit passed. |
 
 ---
 
